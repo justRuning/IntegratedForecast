@@ -1,15 +1,32 @@
 package com.hebj.forecast.service;
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
+import java.util.TreeMap;
 
 import com.hebj.forecast.entity.Forecast;
+import com.hebj.forecast.entity.Station;
 
 public interface ForecastService {
 
-	String readForecast(Date time, int second, String forecastType);
-
-	void save(List<Forecast> forecasts);
+	String readForecast(Date time, int second, String forecastType)
+			throws UnsupportedEncodingException, IOException, ParseException;
 
 	List<Forecast> getLastForecast(String name);
+
+	List<Forecast> getLastForecast(Station staion, Date time, int hour, int age);
+
+	List<Forecast> getLastForecast(Station staion, Date time, int hour);
+
+	Forecast getForecast(Station station, Date time, int hour, int age, String type);
+
+	TreeMap<String, List<Forecast>> getEveryTypeForecasts(Date time, int hour);
+	
+	TreeMap<String, List<Forecast>> getEveryTypeForecasts(Station station,Date time, int hour);
+
+	void suppleForecast(Date time, int hour, String type);
+
 }

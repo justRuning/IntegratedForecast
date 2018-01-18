@@ -1,10 +1,5 @@
 package com.hebj.forecast.util;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
-import com.hebj.forecast.entity.Forecast;
 import com.hebj.forecast.entity.WeatherActual;
 
 public class GetWeatherDataFromString {
@@ -33,13 +28,13 @@ public class GetWeatherDataFromString {
 		value = 1000 - Integer.parseInt(strings[1]);
 		weatherActual.setTem(String.valueOf(value));
 		value = 1000 - Integer.parseInt(strings[2]);
-		weatherActual.setHighTem(String.valueOf(value));
+		weatherActual.setMaxTemp(String.valueOf(value));
 		value = 1000 - Integer.parseInt(strings[4]);
-		weatherActual.setLowTem(String.valueOf(value));
+		weatherActual.setMinTemp(String.valueOf(value));
 		value = 1000 - Integer.parseInt(strings[7]);
-		weatherActual.setHighTem24(String.valueOf(value));
+		weatherActual.setMaxTemp24(String.valueOf(value));
 		value = 1000 - Integer.parseInt(strings[8]);
-		weatherActual.setLowTem24(String.valueOf(value));
+		weatherActual.setMinTemp24(String.valueOf(value));
 		weatherActual.setRelativeHumidity(strings[10]);
 
 		strings = lines[3].split(regex);
@@ -57,7 +52,7 @@ public class GetWeatherDataFromString {
 
 		strings = lines[5].split(regex);
 		value = 1000 - Integer.parseInt(strings[1]);
-		weatherActual.setSurfaceTem(String.valueOf(value));
+		weatherActual.setSurfaceTemp(String.valueOf(value));
 
 		strings = lines[6].split(regex);
 		weatherActual.setVisibility(strings[2]);

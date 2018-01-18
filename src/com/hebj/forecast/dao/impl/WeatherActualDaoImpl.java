@@ -1,6 +1,7 @@
 package com.hebj.forecast.dao.impl;
 
-import java.net.MalformedURLException;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -15,23 +16,21 @@ import org.springframework.orm.hibernate5.HibernateTemplate;
 import org.springframework.stereotype.Repository;
 
 import com.hebj.forecast.dao.WeatherActualDao;
-import com.hebj.forecast.entity.Forecast;
 import com.hebj.forecast.entity.Station;
 import com.hebj.forecast.entity.WeatherActual;
 import com.hebj.forecast.util.GetWeatherDataFromString;
 import com.hebj.forecast.util.ReadDataFromTxt;
 
-import jcifs.smb.SmbException;
 import jcifs.smb.SmbFile;
 
 @Repository
 public class WeatherActualDaoImpl implements WeatherActualDao {
 
 	@Autowired
-	protected HibernateTemplate hibernateTemplate;
+	HibernateTemplate hibernateTemplate;
 
 	@Override
-	public List<WeatherActual> readWeather(Date time) {
+	public List<WeatherActual> readWeather(Date time) throws UnsupportedEncodingException, IOException {
 
 		List<WeatherActual> weatherActuals = new ArrayList<WeatherActual>();
 		List<Station> stations = getStations();
@@ -46,7 +45,6 @@ public class WeatherActualDaoImpl implements WeatherActualDao {
 		cal2.setTime(time);
 		cal.setTime(time);
 		cal.add(Calendar.HOUR_OF_DAY, -8);
-		
 
 		DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
 		DateFormat dateFormat2 = new SimpleDateFormat("yyyyMMddHH");
@@ -57,14 +55,9 @@ public class WeatherActualDaoImpl implements WeatherActualDao {
 					+ "Z_SURF_I_" + station.getStationId() + "_" + dateFormat2.format(cal.getTime())
 					+ "0000_O_AWS_FTM.TXT";
 			SmbFile smbFile;
-			try {
-				smbFile = new SmbFile(filePath);
-				if (smbFile.exists()) {
-					line = ReadDataFromTxt.readData(smbFile);
-				}
-			} catch (MalformedURLException e) {
-				e.printStackTrace();
-			} catch (SmbException e) {
+			smbFile = new SmbFile(filePath);
+			if (smbFile.exists()) {
+				line = ReadDataFromTxt.readData(smbFile);
 			}
 
 			if (line == null) {
@@ -80,6 +73,7 @@ public class WeatherActualDaoImpl implements WeatherActualDao {
 					e.printStackTrace();
 				}
 				weatherActual.setStationID(station.getStationId());
+				weatherActual.setStation(station);
 				weatherActual.setName(station.getStationName());
 				weatherActuals.add(weatherActual);
 			}
@@ -96,13 +90,11 @@ public class WeatherActualDaoImpl implements WeatherActualDao {
 			params[1] = weatherActual.getTime();
 			params[2] = weatherActual.getHour();
 			List<?> weather = hibernateTemplate.find(hql, params);
-			if (weather.size() < 1) {
-				hibernateTemplate.save(weatherActual);
-			} else {
-				weatherActual.setId(((WeatherActual) weather.get(0)).getId());
-				hibernateTemplate.clear();
-				hibernateTemplate.saveOrUpdate(weatherActual);
+			if (!weather.isEmpty()) {
+				hibernateTemplate.deleteAll(weather);
 			}
+			hibernateTemplate.save(weatherActual);
+			hibernateTemplate.flush();
 		}
 	}
 
@@ -122,6 +114,87 @@ public class WeatherActualDaoImpl implements WeatherActualDao {
 			return null;
 		}
 		Collections.reverse(list);
+		hibernateTemplate.setMaxResults(100);
 		return (List<WeatherActual>) list;
+	}
+
+	@Override
+	public List<WeatherActual> getWeather(Date time, int hour) {
+
+		DateFormat dateFormat3 = new SimpleDateFormat("yyyy-MM-dd");
+		String hql = "from WeatherActual w where w.time=? and w.hour=? order by w.id DESC";
+		Object[] params = new Object[2];
+		try {
+			params[0] = dateFormat3.parse(dateFormat3.format(time));
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		params[1] = hour;
+		hibernateTemplate.setMaxResults(10);
+		List<?> list = hibernateTemplate.find(hql, params);
+		if (list.size() < 1) {
+			return null;
+		}
+		Collections.reverse(list);
+		return (List<WeatherActual>) list;
+	}
+
+	@Override
+	public WeatherActual getWeather(Station station, Date time, int hour) {
+		DateFormat dateFormat3 = new SimpleDateFormat("yyyy-MM-dd");
+		String hql = "from WeatherActual w where w.station=? and w.time=? and w.hour=? ";
+		Object[] params = new Object[3];
+		params[0] = station;
+		try {
+			params[1] = dateFormat3.parse(dateFormat3.format(time));
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		params[2] = hour;
+		hibernateTemplate.setMaxResults(10);
+		List<?> list = hibernateTemplate.find(hql, params);
+		if (list.size() < 1) {
+			return null;
+		}
+		Collections.reverse(list);
+		return (WeatherActual) list.get(0);
+	}
+
+	@Override
+	public List<WeatherActual> getWeather(Station station, Date time, int hour, int count) {
+		DateFormat dateFormat3 = new SimpleDateFormat("yyyy-MM-dd");
+		String hql = "from WeatherActual w where w.station=? and w.time <= ? and w.hour=?";
+		Object[] params = new Object[3];
+		params[0] = station;
+		try {
+			params[1] = dateFormat3.parse(dateFormat3.format(time));
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		params[2] = hour;
+		hibernateTemplate.setMaxResults(50);
+		List<?> list = hibernateTemplate.find(hql, params);
+		if (list.size() < 1) {
+			return null;
+		}
+		Collections.reverse(list);
+		return (List<WeatherActual>) list;
+	}
+
+	@Override
+	public List<WeatherActual> getLastWeather() {
+		List<Station> stations = getStations();
+		List<WeatherActual> weatherActuals = new ArrayList<>();
+
+		for (Station station : stations) {
+			Object[] params = new Object[1];
+			params[0] = station;
+			String hql = "from WeatherActual w where w.station=? order by w.time desc";
+			hibernateTemplate.setMaxResults(10);
+			List<WeatherActual> list = (List<WeatherActual>) hibernateTemplate.find(hql, params);
+			weatherActuals.add(list.get(0));
+		}
+		return weatherActuals;
+
 	}
 }

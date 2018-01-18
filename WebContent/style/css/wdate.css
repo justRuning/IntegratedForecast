@@ -1,0 +1,21 @@
+.Wdate{
+	border:#999 1px solid;
+	
+	height:20px;
+	background:#fff url(datePicker.gif) no-repeat right;
+}
+
+.WdateFmtErr{
+	font-weight:bold;
+	color:red;
+}
+
+
+.footer{margin-top: 40px;}
+.footer ul li a,.footer p{color: #fff;}
+
+.footer{/* width:1120px; *//* margin:0 au;/* text-align: center; */enter;}
+.footer ul{border-bottom: 1px solid #e8e5e5; margin-bottom: 10px;}
+.footer ul li{display: inline-block; padding: 20px;}
+.footer ul li a{ font-size: 14px; color: #484747;}
+.footer p{line-height: 30px;color: #807f7f; }
